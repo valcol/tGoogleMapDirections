@@ -1,0 +1,101 @@
+<%@ jet 
+imports="
+	org.talend.core.model.process.INode 
+    org.talend.core.model.metadata.IMetadataTable
+    org.talend.core.model.metadata.IMetadataColumn    
+    org.talend.core.model.process.ElementParameterParser
+    org.talend.core.model.process.IConnection
+    org.talend.designer.codegen.config.CodeGeneratorArgument
+    org.talend.core.model.process.IConnectionCategory
+    java.util.List
+    java.util.Map
+    java.io.IOException
+"
+%>
+
+<%
+CodeGeneratorArgument codeGenArgument = (CodeGeneratorArgument) argument;
+INode node = (INode)codeGenArgument.getArgument();
+String cid = node.getUniqueName();
+String inConnName = null;
+String outConnName = null;
+String lOrigin = ElementParameterParser.getValue( node, "__DIRECTIONS_FROM__" );
+String lDestination = ElementParameterParser.getValue( node, "__DIRECTIONS_TO__" );
+String lOrigin_lat = ElementParameterParser.getValue( node, "__DIRECTIONS_FROM_LAT__" );
+String lOrigin_lng = ElementParameterParser.getValue( node, "__DIRECTIONS_FROM_LNG__" );
+String lDestination_lat = ElementParameterParser.getValue( node, "__DIRECTIONS_TO_LAT__" );
+String lDestination_lng = ElementParameterParser.getValue( node, "__DESTINATION_TO_LNG__" );
+String lGoogleAppId = ElementParameterParser.getValue(node, "__GOOGLE_APP_ID__");
+String lLang = ElementParameterParser.getValue(node, "__LANG__");	
+String lMode = ElementParameterParser.getValue(node, "__MODE__");	
+String lAvoid = ElementParameterParser.getValue(node, "__AVOID__");
+String lUnits = ElementParameterParser.getValue(node, "__UNITS__");
+String lDeptime = ElementParameterParser.getValue(node, "__DEPARTURE_TIME__");
+String lArrtime = ElementParameterParser.getValue(node, "__ARRIVAL_TIME__");
+String lTransmode = ElementParameterParser.getValue(node, "__TRANSIT_MODE__");
+String lTranspref = ElementParameterParser.getValue(node, "__TRANSIT_ROUTING_PREFERENCES__");
+String lUseC = ElementParameterParser.getValue(node, "__USE_COORD__");
+Boolean lUseCb = new Boolean(lUseC); 
+    
+List<? extends IConnection> inConns = node.getIncomingConnections();
+List<? extends IConnection> outConns = node.getOutgoingConnections();
+IConnection inConn = null;
+IConnection outConn = null;
+if(inConns != null && inConns.size() > 0) {
+    inConn = inConns.get(0);
+    inConnName = inConn.getName();
+}
+if(outConns != null && outConns.size() > 0) {
+    outConn = outConns.get(0);
+    outConnName = outConn.getName();
+}
+
+
+List<IMetadataColumn> columnList = inConn.getMetadataTable().getListColumns();
+
+
+if(inConnName != null && outConnName != null && columnList != null && columnList.size() > 0) {
+%>
+	
+		com.valcol.tGoogleMapDirections.GMDRequest GMDRequest_<%=cid %> = new com.valcol.tGoogleMapDirections.GMDRequest();
+
+		GMDRequest_<%=cid %>.setAPIKey(<%=lGoogleAppId%>);
+		
+		
+			GMDRequest_<%=cid %>.setOrigin(String.valueOf(<%=inConnName%>.<%=lOrigin%>));
+			GMDRequest_<%=cid %>.setDestination(String.valueOf(<%=inConnName%>.<%=lDestination%>));
+
+		GMDRequest_<%=cid %>.setMode(<%=lMode%>);
+		GMDRequest_<%=cid %>.setAvoid(<%=lAvoid%>);
+		GMDRequest_<%=cid %>.setLanguage(<%=lLang%>);
+		GMDRequest_<%=cid %>.setUnits(<%=lUnits%>);
+		GMDRequest_<%=cid %>.setDeparture_time(<%=lDeptime%>);
+		GMDRequest_<%=cid %>.setArrival_time(<%=lArrtime%>);
+		GMDRequest_<%=cid %>.setTransit_mode(<%=lTransmode%>);
+		
+    	com.valcol.tGoogleMapDirections.GMDResponse GMDResponse_<%=cid %> = GMDEngine_<%=cid %>.makeRequest(GMDRequest_<%=cid %>);
+		if(GMDResponse_<%=cid %> != null){
+	    	<%=outConnName%>.DISTANCE = GMDResponse_<%=cid %>.getDistance();
+			<%=outConnName%>.DISTANCE_TEXT = GMDResponse_<%=cid %>.getDistance_text();
+	    	<%=outConnName%>.DURATION = GMDResponse_<%=cid %>.getDuration();
+			<%=outConnName%>.DURATION_TEXT = GMDResponse_<%=cid %>.getDuration_text();
+			<%=outConnName%>.END_ADRESS = GMDResponse_<%=cid %>.getEnd_adress();
+			<%=outConnName%>.END_ADRESS_LAT = GMDResponse_<%=cid %>.getEnd_adress_lat();
+			<%=outConnName%>.END_ADRESS_LNG = GMDResponse_<%=cid %>.getEnd_adress_lng();
+			<%=outConnName%>.START_ADRESS = GMDResponse_<%=cid %>.getStart_adress();
+			<%=outConnName%>.START_ADRESS_LAT = GMDResponse_<%=cid %>.getStart_adress_lat();
+			<%=outConnName%>.START_ADRESS_LNG = GMDResponse_<%=cid %>.getStart_adress_lng();
+		}
+    <%
+    for(IMetadataColumn metadataColumn : columnList) {
+    	
+        %>
+        <%=outConnName%>.<%=metadataColumn.getLabel()%> = <%=inConnName%>.<%=metadataColumn.getLabel()%>;
+        <%
+    }
+}
+
+
+
+
+%>
